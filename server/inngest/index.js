@@ -63,30 +63,49 @@ const syncWorkspaceCreation = inngest.createFunction(
       const { data } = event;
       console.log("Creating workspace:", data);
 
-      await prisma.workspace.create({
-        data: {
-          id: data.id,
-          name: data.name,
-          slug: data.slug,
-          ownerId: data.created_by,
-          image_url: data.image_url,
-        }
+      // Check if workspace already exists
+      const existing = await prisma.workspace.findUnique({
+        where: { id: data.id },
       });
 
-      await prisma.workspaceMember.create({
-        data: {
-          userId: data.created_by,
-          workspaceId: data.id,
-          role: "ADMIN"
-        }
+      if (!existing) {
+        await prisma.workspace.create({
+          data: {
+            id: data.id,
+            name: data.name,
+            slug: data.slug,
+            ownerId: data.created_by,
+            image_url: data.image_url,
+          },
+        });
+      } else {
+        console.log("Workspace already exists:", data.id);
+      }
+
+      // Add creator as ADMIN member (if not exists)
+      const memberExists = await prisma.workspaceMember.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: data.created_by,
+            workspaceId: data.id,
+          },
+        },
       });
 
-      console.log("Workspace created successfully:", data.id);
+      if (!memberExists) {
+        await prisma.workspaceMember.create({
+          data: {
+            userId: data.created_by,
+            workspaceId: data.id,
+            role: "ADMIN",
+          },
+        });
+      }
     } catch (error) {
       console.error("Workspace creation failed:", error.message);
     }
   }
-)
+);
 
 
 // Inngest Function to update workspace data in database
