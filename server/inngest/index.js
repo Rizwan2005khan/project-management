@@ -56,73 +56,30 @@ const syncUserUpdation = inngest.createFunction(
 
 // Inngest Function to save workspace data to a database
 const syncWorkspaceCreation = inngest.createFunction(
-  { id: 'sync-workspace-from-clerk' },
-  { event: 'clerk/organization.created' },
-  async ({ event }) => {
-    const { data } = event;
-    try {
-      console.log("Incoming organization.created event:", data);
-
-      // Ensure owner exists first
-      const ownerExists = await prisma.user.findUnique({
-        where: { id: data.created_by },
-      });
-
-      if (!ownerExists) {
-        console.log("Owner does not exist yet, skipping workspace creation:", data.created_by);
-        return; // Skip creating workspace until user exists
-      }
-
-      // Create workspace only if it doesn't exist
-      const workspaceExists = await prisma.workspace.findUnique({
-        where: { id: data.id },
-      });
-
-      if (!workspaceExists) {
+    {id: 'sync-workspace-from-clerk'},
+    {event: 'clerk/organization.created'},
+    async ({ event }) => {
+        const { data } = event
         await prisma.workspace.create({
-          data: {
-            id: data.id,
-            name: data.name,
-            slug: data.slug,
-            ownerId: data.created_by,
-            image_url: data.image_url || "",
-          },
-        });
-        console.log("Workspace created:", data.id);
-      } else {
-        console.log("Workspace already exists:", data.id);
-      }
+            data: {
+                id: data.id,
+                name: data.name,
+                slug: data.slug,
+                ownerId: data.created_by,
+                image_url: data.image_url,
+            }
+        })
 
-      // Add creator as ADMIN member only if not exists
-      const memberExists = await prisma.workspaceMember.findUnique({
-        where: {
-          userId_workspaceId: {
-            userId: data.created_by,
-            workspaceId: data.id,
-          },
-        },
-      });
-
-      if (!memberExists) {
+        // Add creator as ADMIN member
         await prisma.workspaceMember.create({
-          data: {
-            userId: data.created_by,
-            workspaceId: data.id,
-            role: "ADMIN",
-          },
-        });
-        console.log("Workspace member created:", data.created_by);
-      } else {
-        console.log("Workspace member already exists:", data.created_by);
-      }
-    } catch (error) {
-      console.error("Workspace creation failed:", error.message);
-      // Do NOT re-throw; this prevents Inngest from closing the connection
+            data: {
+                userId: data.created_by,
+                workspaceId: data.id,
+                role: "ADMIN"
+            }
+        })
     }
-  }
-);
-
-
+)
 
 // Inngest Function to update workspace data in database
 const syncWorkspaceUpdation = inngest.createFunction(
