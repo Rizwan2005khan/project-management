@@ -28,7 +28,7 @@ const Layout = () => {
   // Initial load of workspaces
   useEffect(() => {
     if (isLoaded && user && workspaces.length === 0) {
-     return <CreateOrganization />
+      dispatch(fetchWorkspaces({ getToken: () => getToken() }));
     }
   }, [user, isLoaded, workspaces.length]);
 
