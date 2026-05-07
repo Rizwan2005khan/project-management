@@ -8,6 +8,7 @@ import {
   LayoutDashboardIcon,
   SettingsIcon,
   UsersIcon,
+  Layers
 } from "lucide-react";
 import { useClerk } from "@clerk/clerk-react";
 
@@ -15,6 +16,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const { openUserProfile } = useClerk();
   const menuItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboardIcon },
+    { name: "Portfolios", href: "/portfolios", icon: Layers },
     { name: "Projects", href: "/projects", icon: FolderOpenIcon },
     { name: "Team", href: "/team", icon: UsersIcon },
   ];
@@ -38,6 +40,10 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
         isSidebarOpen ? "left-0" : "-left-full"
       } `}
     >
+      <div className="px-6 py-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">ProjectHub</h2>
+        <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">V2</span>
+      </div>
       <WorkspaceDropdown />
       <hr className="border-gray-200 dark:border-zinc-800" />
       <div className="flex-1 overflow-y-scroll no-scrollbar flex flex-col">

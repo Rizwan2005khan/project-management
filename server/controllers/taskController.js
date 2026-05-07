@@ -1,12 +1,13 @@
 import prisma from "../config/prisma.js";
 import { inngest } from "../inngest/index.js";
+import { logActivity } from "../utils/activityLogger.js";
 
 
 // create task
 export const createTask = async (req, res) => {
     try {
         const { userId } = await req.auth();
-        const { projectId, title, description, type, status, priority, assigneeId, due_date } = req.body;
+        const { projectId, title, description, type, status, priority, assigneeId, due_date, parentId } = req.body;
 
         const origin = req.get('origin')
 
@@ -32,7 +33,8 @@ export const createTask = async (req, res) => {
                 assigneeId,
                 status,
                 type,
-                due_date: new Date(due_date)
+                due_date: new Date(due_date),
+                parentId: parentId || null
             }
         })
 
@@ -47,6 +49,14 @@ export const createTask = async (req, res) => {
                 taskId: task.id, origin
             }
         })
+
+        await logActivity({
+            type: "TASK_CREATED",
+            content: `created task "${task.title}"`,
+            userId,
+            projectId: task.projectId,
+            workspaceId: project.workspaceId
+        });
         
         res.json({ task: taskWithAssignee, message: "Task created successfully"})
     } catch (error) {
@@ -82,7 +92,28 @@ export const updateTask = async (req, res) => {
             data: req.body
         })
 
-        res.json({ task: updateTask, message: "Task updated successfully"})
+        // Trigger automations via Inngest
+        await inngest.send({
+            name: "app/task.updated",
+            data: { 
+                taskId: req.params.id, 
+                changedFields: req.body, 
+                oldTask: task 
+            }
+        });
+
+        // Log if status changed
+        if (req.body.status && req.body.status !== task.status) {
+            await logActivity({
+                type: "STATUS_CHANGED",
+                content: `changed status of "${task.title}" to ${req.body.status}`,
+                userId,
+                projectId: task.projectId,
+                workspaceId: project.workspaceId
+            });
+        }
+
+        res.json({ task: updatedTask, message: "Task updated successfully"})
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: error.code || error.message});
@@ -122,3 +153,61 @@ export const deleteTask = async (req, res) => {
         res.status(500).json({ message: error.code || error.message});
     }
 }
+
+// Add dependency
+export const addDependency = async (req, res) => {
+    try {
+        const { taskId, dependencyId } = req.body;
+        const { userId } = await req.auth();
+
+        if (taskId === dependencyId) {
+            return res.status(400).json({ message: "A task cannot depend on itself" });
+        }
+
+        const updatedTask = await prisma.task.update({
+            where: { id: taskId },
+            data: {
+                dependsOn: {
+                    connect: { id: dependencyId }
+                }
+            },
+            include: { dependsOn: true, project: true }
+        });
+
+        await logActivity({
+            type: "DEPENDENCY_ADDED",
+            content: `added dependency to "${updatedTask.title}"`,
+            userId,
+            projectId: updatedTask.projectId,
+            workspaceId: updatedTask.project.workspaceId
+        });
+
+        res.json({ task: updatedTask, message: "Dependency added successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: error.code || error.message });
+    }
+};
+
+// Remove dependency
+export const removeDependency = async (req, res) => {
+    try {
+        const { taskId, dependencyId } = req.body;
+        const { userId } = await req.auth();
+
+        const updatedTask = await prisma.task.update({
+            where: { id: taskId },
+            data: {
+                dependsOn: {
+                    disconnect: { id: dependencyId }
+                }
+            },
+            include: { dependsOn: true }
+        });
+
+        res.json({ task: updatedTask, message: "Dependency removed successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: error.code || error.message });
+    }
+};

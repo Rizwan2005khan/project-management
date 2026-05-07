@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon, FileStackIcon, ZapIcon } from "lucide-react";
+import { ArrowLeft, Plus, Settings, BarChart3, Calendar, FileStack, Zap, Activity, Users, Image } from "lucide-react";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
 import CreateTaskDialog from "../components/CreateTaskDialog";
 import ProjectCalendar from "../components/ProjectCalendar";
 import ProjectTasks from "../components/ProjectTasks";
+import ProjectBoard from "../components/ProjectBoard";
+import ProjectActivity from "../components/ProjectActivity";
+import WorkloadView from "../components/WorkloadView";
+import ProjectGallery from "../components/ProjectGallery";
+import TaskDetailsSheet from "../components/TaskDetailsSheet";
 
 export default function ProjectDetail() {
 
@@ -21,6 +26,7 @@ export default function ProjectDetail() {
     const [tasks, setTasks] = useState([]);
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [activeTab, setActiveTab] = useState(tab || "tasks");
+    const [selectedTaskId, setSelectedTaskId] = useState(null);
 
     useEffect(() => {
         if (tab) setActiveTab(tab);
@@ -59,17 +65,17 @@ export default function ProjectDetail() {
             <div className="flex max-md:flex-col gap-4 flex-wrap items-start justify-between max-w-6xl">
                 <div className="flex items-center gap-4">
                     <button className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400" onClick={() => navigate('/projects')}>
-                        <ArrowLeftIcon className="w-4 h-4" />
+                        <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-medium">{project.name}</h1>
+                        <h1 className="text-xl font-medium">{project.name} <span className="text-red-500 text-xs">(V2)</span></h1>
                         <span className={`px-2 py-1 rounded text-xs capitalize ${statusColors[project.status]}`} >
                             {project.status.replace("_", " ")}
                         </span>
                     </div>
                 </div>
                 <button onClick={() => setShowCreateTask(true)} className="flex items-center gap-2 px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white" >
-                    <PlusIcon className="size-4" />
+                    <Plus className="size-4" />
                     New Task
                 </button>
             </div>
@@ -87,21 +93,25 @@ export default function ProjectDetail() {
                             <div className="text-sm text-zinc-600 dark:text-zinc-400">{card.label}</div>
                             <div className={`text-2xl font-bold ${card.color}`}>{card.value}</div>
                         </div>
-                        <ZapIcon className={`size-4 ${card.color}`} />
+                        <Zap className={`size-4 ${card.color}`} />
                     </div>
                 ))}
             </div>
 
             {/* Tabs */}
             <div>
-                <div className="inline-flex flex-wrap max-sm:grid grid-cols-3 gap-2 border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
+                <div className="inline-flex flex-wrap p-1 gap-1 bg-zinc-100/50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 rounded-xl glass-effect">
                     {[
-                        { key: "tasks", label: "Tasks", icon: FileStackIcon },
-                        { key: "calendar", label: "Calendar", icon: CalendarIcon },
-                        { key: "analytics", label: "Analytics", icon: BarChart3Icon },
-                        { key: "settings", label: "Settings", icon: SettingsIcon },
+                        { key: "tasks", label: "List", icon: FileStack },
+                        { key: "board", label: "Board", icon: Zap },
+                        { key: "calendar", label: "Calendar", icon: Calendar },
+                        { key: "activity", label: "Activity", icon: Activity },
+                        { key: "workload", label: "Workload", icon: Users },
+                        { key: "gallery", label: "Gallery", icon: Image },
+                        { key: "analytics", label: "Analytics", icon: BarChart3 },
+                        { key: "settings", label: "Settings", icon: Settings },
                     ].map((tabItem) => (
-                        <button key={tabItem.key} onClick={() => { setActiveTab(tabItem.key); setSearchParams({ id: id, tab: tabItem.key }) }} className={`flex items-center gap-2 px-4 py-2 text-sm transition-all ${activeTab === tabItem.key ? "bg-zinc-100 dark:bg-zinc-800/80" : "hover:bg-zinc-50 dark:hover:bg-zinc-700"}`} >
+                        <button key={tabItem.key} onClick={() => { setActiveTab(tabItem.key); setSearchParams({ id: id, tab: tabItem.key }) }} className={`flex items-center gap-2 px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === tabItem.key ? "bg-white dark:bg-zinc-700 text-primary shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-zinc-800/50"}`} >
                             <tabItem.icon className="size-3.5" />
                             {tabItem.label}
                         </button>
@@ -111,7 +121,27 @@ export default function ProjectDetail() {
                 <div className="mt-6">
                     {activeTab === "tasks" && (
                         <div className=" dark:bg-zinc-900/40 rounded max-w-6xl">
-                            <ProjectTasks tasks={tasks} />
+                            <ProjectTasks project={project} tasks={tasks} onTaskClick={(taskId) => setSelectedTaskId(taskId)} />
+                        </div>
+                    )}
+                    {activeTab === "board" && (
+                        <div className="rounded max-w-6xl">
+                            <ProjectBoard tasks={tasks} onAddTask={() => setShowCreateTask(true)} onTaskClick={(taskId) => setSelectedTaskId(taskId)} />
+                        </div>
+                    )}
+                    {activeTab === "activity" && (
+                        <div className=" dark:bg-zinc-900/40 rounded max-w-6xl">
+                            <ProjectActivity workspaceId={project.workspaceId} projectId={project.id} />
+                        </div>
+                    )}
+                    {activeTab === "workload" && (
+                        <div className="rounded max-w-6xl">
+                            <WorkloadView tasks={tasks} members={project.members} />
+                        </div>
+                    )}
+                    {activeTab === "gallery" && (
+                        <div className="rounded max-w-6xl">
+                            <ProjectGallery tasks={tasks} />
                         </div>
                     )}
                     {activeTab === "analytics" && (
@@ -134,6 +164,13 @@ export default function ProjectDetail() {
 
             {/* Create Task Modal */}
             {showCreateTask && <CreateTaskDialog showCreateTask={showCreateTask} setShowCreateTask={setShowCreateTask} projectId={id} />}
+
+            {/* Task Details Side Panel */}
+            <TaskDetailsSheet 
+                taskId={selectedTaskId} 
+                projectId={id} 
+                onClose={() => setSelectedTaskId(null)} 
+            />
         </div>
     );
 }

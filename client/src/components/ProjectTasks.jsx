@@ -22,10 +22,9 @@ const priorityTexts = {
     HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
 };
 
-const ProjectTasks = ({ tasks }) => {
+const ProjectTasks = ({ project, tasks, onTaskClick }) => {
     const {getToken} = useAuth()
     const dispatch = useDispatch();
-    const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
 
     const [filters, setFilters] = useState({
@@ -152,12 +151,12 @@ const ProjectTasks = ({ tasks }) => {
             </div>
 
             {/* Tasks Table */}
-            <div className="overflow-auto rounded-lg lg:border border-zinc-300 dark:border-zinc-800">
+            <div className="overflow-auto rounded-xl border border-zinc-200 dark:border-zinc-800 glass-effect shadow-sm">
                 <div className="w-full">
                     {/* Desktop/Table View */}
                     <div className="hidden lg:block overflow-x-auto">
-                        <table className="min-w-full text-sm text-left not-dark:bg-white text-zinc-900 dark:text-zinc-300">
-                            <thead className="text-xs uppercase dark:bg-zinc-800/70 text-zinc-500 dark:text-zinc-400 ">
+                        <table className="min-w-full text-sm text-left text-zinc-900 dark:text-zinc-300">
+                            <thead className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 bg-zinc-50/50 dark:bg-zinc-800/30">
                                 <tr>
                                     <th className="pl-2 pr-1">
                                         <input onChange={() => selectedTasks.length > 1 ? setSelectedTasks([]) : setSelectedTasks(tasks.map((t) => t.id))} checked={selectedTasks.length === tasks.length} type="checkbox" className="size-3 accent-zinc-600 dark:accent-zinc-500" />
@@ -168,6 +167,9 @@ const ProjectTasks = ({ tasks }) => {
                                     <th className="px-4 py-3">Status</th>
                                     <th className="px-4 py-3">Assignee</th>
                                     <th className="px-4 py-3">Due Date</th>
+                                    {project?.customFields?.map(field => (
+                                        <th key={field.id} className="px-4 py-3">{field.name}</th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody>
@@ -177,8 +179,8 @@ const ProjectTasks = ({ tasks }) => {
                                         const { background, prioritycolor } = priorityTexts[task.priority] || {};
 
                                         return (
-                                            <tr key={task.id} onClick={() => navigate(`/taskDetails?projectId=${task.projectId}&taskId=${task.id}`)} className=" border-t border-zinc-300 dark:border-zinc-800 group hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all cursor-pointer" >
-                                                <td onClick={e => e.stopPropagation()} className="pl-2 pr-1">
+                                            <tr key={task.id} onClick={() => onTaskClick(task.id)} className=" border-t border-zinc-100 dark:border-zinc-800/50 group hover:bg-primary/5 dark:hover:bg-primary/10 transition-all cursor-pointer" >
+                                                <td onClick={e => e.stopPropagation()} className="pl-3 pr-1">
                                                     <input type="checkbox" className="size-3 accent-zinc-600 dark:accent-zinc-500" onChange={() => selectedTasks.includes(task.id) ? setSelectedTasks(selectedTasks.filter((i) => i !== task.id)) : setSelectedTasks((prev) => [...prev, task.id])} checked={selectedTasks.includes(task.id)} />
                                                 </td>
                                                 <td className="px-4 pl-0 py-2">{task.title}</td>
@@ -212,6 +214,16 @@ const ProjectTasks = ({ tasks }) => {
                                                         {format(new Date(task.due_date), "dd MMMM")}
                                                     </div>
                                                 </td>
+                                                {project?.customFields?.map(field => {
+                                                    const valueObj = task.customFieldValues?.find(v => v.definitionId === field.id);
+                                                    return (
+                                                        <td key={field.id} className="px-4 py-2">
+                                                            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                                                                {valueObj?.value || "-"}
+                                                            </span>
+                                                        </td>
+                                                    );
+                                                })}
                                             </tr>
                                         );
                                     })

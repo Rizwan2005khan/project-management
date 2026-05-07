@@ -7,7 +7,7 @@ import api from "../configs/api";
 import toast from "react-hot-toast";
 import { addTask } from "../features/workspaceSlice";
 
-export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
+export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId, parentId }) {
 
     const {getToken} = useAuth()
     const dispatch = useDispatch()
@@ -31,7 +31,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         e.preventDefault();
         setIsSubmitting(true)
         try {
-            const { data } = await api.post('/api/tasks', {...formData, workspaceId: currentWorkspace.id, projectId}, {headers: {Authorization: `Bearer ${await getToken()}`}})
+            const { data } = await api.post('/api/tasks', {...formData, workspaceId: currentWorkspace.id, projectId, parentId}, {headers: {Authorization: `Bearer ${await getToken()}`}})
             setShowCreateTask(false)
             setFormData({
                title: "",

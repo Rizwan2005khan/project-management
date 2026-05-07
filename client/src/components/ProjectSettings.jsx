@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import AddProjectMember from "./AddProjectMember";
 import { useDispatch } from "react-redux";
@@ -119,8 +119,171 @@ export default function ProjectSettings({ project }) {
                 </form>
             </div>
 
-            {/* Team Members */}
+            {/* Custom Fields Management */}
             <div className="space-y-6">
+                <div className={cardClasses}>
+                    <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">Custom Fields</h2>
+                    
+                    <div className="space-y-4 mb-6">
+                        {project.customFields?.map((field) => (
+                            <div key={field.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+                                <div>
+                                    <p className="text-sm font-semibold">{field.name}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{field.type}</p>
+                                </div>
+                                <button 
+                                    onClick={async () => {
+                                        if (confirm("Delete this field? All task values will be lost.")) {
+                                            const token = await getToken();
+                                            await api.delete(`/api/custom-fields/definition/${field.id}`, {
+                                                headers: { Authorization: `Bearer ${token}` }
+                                            });
+                                            dispatch(fetchWorkspaces({ getToken }));
+                                            toast.success("Field deleted");
+                                        }
+                                    }}
+                                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                >
+                                    <Plus className="size-4 rotate-45" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
+                        <h3 className="text-sm font-semibold mb-3">Add New Field</h3>
+                        <div className="space-y-3">
+                            <input 
+                                id="new-field-name"
+                                placeholder="Field Name (e.g. Budget)" 
+                                className={inputClasses} 
+                            />
+                            <select id="new-field-type" className={inputClasses}>
+                                <option value="TEXT">Text</option>
+                                <option value="NUMBER">Number</option>
+                                <option value="DROPDOWN">Dropdown</option>
+                                <option value="DATE">Date</option>
+                            </select>
+                            <button 
+                                onClick={async () => {
+                                    const name = document.getElementById("new-field-name").value;
+                                    const type = document.getElementById("new-field-type").value;
+                                    if (!name) return toast.error("Name is required");
+                                    
+                                    const token = await getToken();
+                                    await api.post(`/api/custom-fields/definition`, 
+                                        { projectId: project.id, name, type },
+                                        { headers: { Authorization: `Bearer ${token}` } }
+                                    );
+                                    document.getElementById("new-field-name").value = "";
+                                    dispatch(fetchWorkspaces({ getToken }));
+                                    toast.success("Field added");
+                                }}
+                                className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                            >
+                                Create Field
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Automations Management */}
+                <div className={cardClasses}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Zap className="size-5 text-amber-500" />
+                        <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300">Automations</h2>
+                    </div>
+                    
+                    <div className="space-y-4 mb-6">
+                        {project.automations?.map((auto) => (
+                            <div key={auto.id} className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 group relative">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-sm font-bold">{auto.name}</p>
+                                        <div className="mt-2 space-y-1 text-xs text-zinc-500">
+                                            <p><span className="text-zinc-400 font-medium">When:</span> Status is <span className="text-blue-500 font-bold">{auto.triggerValue}</span></p>
+                                            <p><span className="text-zinc-400 font-medium">Then:</span> {auto.actionType === 'AUTO_ASSIGN' ? 'Assign to' : 'Set Priority to'} <span className="text-amber-500 font-bold">{auto.actionValue}</span></p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={async () => {
+                                            if (confirm("Delete this automation?")) {
+                                                const token = await getToken();
+                                                await api.delete(`/api/automations/${auto.id}`, {
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                });
+                                                dispatch(fetchWorkspaces({ getToken }));
+                                                toast.success("Automation deleted");
+                                            }
+                                        }}
+                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                    >
+                                        <Plus className="size-4 rotate-45" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30">
+                        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                            <Plus className="size-4" /> Create Rule
+                        </h3>
+                        <div className="space-y-3">
+                            <input 
+                                id="auto-name"
+                                placeholder="Rule Name (e.g. Auto-Assign Done)" 
+                                className={inputClasses} 
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">When Status is</label>
+                                    <select id="auto-trigger-value" className={inputClasses}>
+                                        <option value="TODO">To Do</option>
+                                        <option value="IN_PROGRESS">In Progress</option>
+                                        <option value="DONE">Done</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">Action</label>
+                                    <select id="auto-action-type" className={inputClasses}>
+                                        <option value="AUTO_ASSIGN">Auto-Assign</option>
+                                        <option value="SET_PRIORITY">Set Priority</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input 
+                                id="auto-action-value"
+                                placeholder="User ID or Priority (LOW/MEDIUM/HIGH)" 
+                                className={inputClasses} 
+                            />
+                            <button 
+                                onClick={async () => {
+                                    const name = document.getElementById("auto-name").value;
+                                    const triggerValue = document.getElementById("auto-trigger-value").value;
+                                    const actionType = document.getElementById("auto-action-type").value;
+                                    const actionValue = document.getElementById("auto-action-value").value;
+                                    
+                                    if (!name || !actionValue) return toast.error("All fields are required");
+                                    
+                                    const token = await getToken();
+                                    await api.post(`/api/automations`, 
+                                        { projectId: project.id, name, triggerType: "STATUS_CHANGE", triggerValue, actionType, actionValue },
+                                        { headers: { Authorization: `Bearer ${token}` } }
+                                    );
+                                    document.getElementById("auto-name").value = "";
+                                    document.getElementById("auto-action-value").value = "";
+                                    dispatch(fetchWorkspaces({ getToken }));
+                                    toast.success("Automation rule added");
+                                }}
+                                className="w-full py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors"
+                            >
+                                Activate Rule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div className={cardClasses}>
                     <div className="flex items-center justify-between gap-4">
                         <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">

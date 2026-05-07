@@ -12,8 +12,11 @@ export const getUserWorkspaces = async (req, res) => {
                 members: {include: {user: true}},
                 projects: {
                     include: {
-                        tasks: {include: {assignee: true, comments: {include: {user: true}}}},
-                        members: {include: {user: true}}
+                        tasks: {include: {assignee: true, comments: {include: {user: true}}, subtasks: {include: {assignee: true}}, dependsOn: {include: {assignee: true}}, blocks: {include: {assignee: true}}, customFieldValues: {include: {definition: true}}}},
+                        members: { include: { user: true } },
+                        activities: { include: { user: true }, orderBy: { createdAt: "desc" }, take: 10 },
+                        customFields: true,
+                        automations: true
                     }
                 },
                 owner: true
@@ -82,3 +85,24 @@ export const addMember = async (req, res) => {
         res.status(500).json({ message: error.code || error.message})
     }
 }
+
+// Get activities for workspace
+export const getWorkspaceActivities = async (req, res) => {
+    try {
+        const { workspaceId } = req.params;
+        const activities = await prisma.activity.findMany({
+            where: { workspaceId },
+            include: {
+                user: true,
+                project: true
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20
+        });
+
+        res.json({ activities });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: error.code || error.message });
+    }
+};

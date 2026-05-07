@@ -59,22 +59,25 @@ const workspaceSlice = createSlice({
             );
         },
         addTask: (state, action) => {
-
+            const task = action.payload;
             state.currentWorkspace.projects = state.currentWorkspace.projects.map((p) => {
-                console.log(p.id, action.payload.projectId, p.id === action.payload.projectId);
-                if (p.id === action.payload.projectId) {
-                    p.tasks.push(action.payload);
+                if (p.id === task.projectId) {
+                    p.tasks.push(task);
+                    // If it's a subtask, add it to parent's subtasks array
+                    if (task.parentId) {
+                        const parent = p.tasks.find(t => t.id === task.parentId);
+                        if (parent) {
+                            if (!parent.subtasks) parent.subtasks = [];
+                            parent.subtasks.push(task);
+                        }
+                    }
                 }
                 return p;
             });
 
-            // find workspace and project by id and add task to it
+            // Sync with workspaces array
             state.workspaces = state.workspaces.map((w) =>
-                w.id === state.currentWorkspace.id ? {
-                    ...w, projects: w.projects.map((p) =>
-                        p.id === action.payload.projectId ? { ...p, tasks: p.tasks.concat(action.payload) } : p
-                    )
-                } : w
+                w.id === state.currentWorkspace.id ? state.currentWorkspace : w
             );
         },
         updateTask: (state, action) => {

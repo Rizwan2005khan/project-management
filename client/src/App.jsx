@@ -6,6 +6,7 @@ import Projects from "./pages/Projects";
 import Team from "./pages/Team";
 import ProjectDetails from "./pages/ProjectDetails";
 import TaskDetails from "./pages/TaskDetails";
+import Portfolios from "./pages/Portfolios";
 
 const App = () => {
     return (
@@ -16,6 +17,7 @@ const App = () => {
                     <Route index element={<Dashboard />} />
                     <Route path="team" element={<Team />} />
                     <Route path="projects" element={<Projects />} />
+                    <Route path="portfolios" element={<Portfolios />} />
                     <Route path="projectsDetail" element={<ProjectDetails />} />
                     <Route path="taskDetails" element={<TaskDetails />} />
                 </Route>

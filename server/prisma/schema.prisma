@@ -27,6 +27,12 @@ enum TaskType {
     OTHER
 }
 
+enum ProjectHealth {
+    ON_TRACK
+    AT_RISK
+    OFF_TRACK
+}
+
 enum ProjectStatus {
     ACTIVE
     PLANNING
@@ -53,12 +59,15 @@ model User {
     projects        Project[]         @relation("ProjectOwner")
     tasks           Task[]            @relation("TaskAssignee")
     comments        Comment[]
+    timeEntries     TimeEntry[]
+    attachments     Attachment[]
     ownedWorkspaces Workspace[]
     ProjectMember   ProjectMember[]
+    activities      Activity[]
 }
 
 model Workspace {
-    id          String   @id
+    id          String   @id @default(cuid())
     name        String
     slug        String   @unique
     description String?
@@ -68,9 +77,10 @@ model Workspace {
     image_url   String   @default("")
     updatedAt   DateTime @updatedAt
 
-    members  WorkspaceMember[]
-    projects Project[]
-    owner    User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+    members    WorkspaceMember[]
+    projects   Project[]
+    activities Activity[]
+    owner      User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }
 
 model WorkspaceMember {
@@ -86,23 +96,28 @@ model WorkspaceMember {
 }
 
 model Project {
-    id          String          @id @default(uuid())
+    id          String          @id @default(cuid())
     name        String
     description String?
     priority    Priority        @default(MEDIUM)
     status      ProjectStatus   @default(ACTIVE)
+    health      ProjectHealth   @default(ON_TRACK)
     start_date  DateTime?
     end_date    DateTime?
-    team_lead   String
+    team_lead   String?
     workspaceId String
     progress    Int             @default(0)
     createdAt   DateTime        @default(now())
     updatedAt   DateTime        @updatedAt
-    members     ProjectMember[]
+    
+    members    ProjectMember[]
+    tasks      Task[]
+    activities Activity[]
+    customFields CustomFieldDefinition[]
+    automations Automation[]
 
-    owner     User      @relation("ProjectOwner", fields: [team_lead], references: [id], onDelete: Cascade)
+    owner     User?     @relation("ProjectOwner", fields: [team_lead], references: [id], onDelete: Cascade)
     workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-    tasks     Task[]
 }
 
 model ProjectMember {
@@ -124,13 +139,89 @@ model Task {
     type        TaskType   @default(TASK)
     priority    Priority   @default(MEDIUM)
     assigneeId  String
+    parentId    String?
     due_date    DateTime
     createdAt   DateTime   @default(now())
     updatedAt   DateTime   @updatedAt
 
     project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
     assignee User      @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+    parent   Task?     @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
+    subtasks Task[]    @relation("Subtasks")
+    
+    dependsOn Task[]    @relation("TaskDependencies")
+    blocks    Task[]    @relation("TaskDependencies")
+
     comments Comment[]
+    customFieldValues CustomFieldValue[]
+    timeEntries TimeEntry[]
+    attachments Attachment[]
+}
+
+model Automation {
+  id           String   @id @default(cuid())
+  name         String
+  triggerType  String   // e.g. "STATUS_CHANGE"
+  triggerValue String   // e.g. "DONE"
+  actionType   String   // e.g. "AUTO_ASSIGN"
+  actionValue  String   // e.g. userId or priority
+  isActive     Boolean  @default(true)
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String   // e.g. "IMAGE", "VIDEO", "FILE"
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model TimeEntry {
+  id        String   @id @default(cuid())
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  duration  Int?     // Duration in seconds
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DROPDOWN
+  DATE
+}
+
+model CustomFieldDefinition {
+  id          String           @id @default(cuid())
+  name        String
+  type        CustomFieldType
+  options     Json?            // For DROPDOWN type: e.g. ["Low", "Medium", "High"]
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  values      CustomFieldValue[]
+}
+
+model CustomFieldValue {
+  id              String                @id @default(cuid())
+  value           String                // Stored as string, casted based on type
+  taskId          String
+  task            Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  definitionId    String
+  definition      CustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, definitionId]) // One value per field per task
 }
 
 model Comment {
@@ -142,4 +233,17 @@ model Comment {
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
     task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+    id          String   @id @default(cuid())
+    type        String   // e.g., "TASK_CREATED", "STATUS_CHANGED", "MEMBER_ADDED"
+    content     String   // Descriptive text
+    userId      String
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    projectId   String?
+    project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    workspaceId String
+    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+    createdAt   DateTime @default(now())
 }

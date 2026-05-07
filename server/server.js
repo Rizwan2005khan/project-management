@@ -9,6 +9,9 @@ import { protect } from "./middleware/authMiddleware.js";
 import projectRouter from "./routes/projectRoutes.js";
 import taskRouter from "./routes/taskRoutes.js";
 import commentRouter from "./routes/commentRoutes.js";
+import customFieldRouter from "./routes/customFieldRoutes.js";
+import timeRouter from "./routes/timeRoutes.js";
+import automationRouter from "./routes/automationRoutes.js";
 
 const app = express()
 
@@ -26,6 +29,9 @@ app.use("/api/workspaces",protect, workspaceRouter)
 app.use("/api/projects", protect, projectRouter)
 app.use("/api/tasks", protect, taskRouter)
 app.use("/api/comments", protect, commentRouter)
+app.use("/api/custom-fields", protect, customFieldRouter)
+app.use("/api/time", protect, timeRouter)
+app.use("/api/automations", protect, automationRouter)
 
 const PORT = process.env.PORT || 5000
 

@@ -227,6 +227,46 @@ const SendTaskAssignmentEmail = inngest.createFunction(
   }
 );
 
+// Inngest Function to Process Project Automations
+const ProcessAutomations = inngest.createFunction(
+  { id: "process-project-automations" },
+  { event: "app/task.updated" },
+  async ({ event, step }) => {
+    const { taskId, changedFields } = event.data;
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { project: { include: { automations: true } } },
+    });
+
+    if (!task || !task.project.automations.length) return;
+
+    for (const automation of task.project.automations) {
+      if (!automation.isActive) continue;
+
+      // Trigger: Status Change
+      if (automation.triggerType === "STATUS_CHANGE" && changedFields.status === automation.triggerValue) {
+        
+        // Action: Auto Assign
+        if (automation.actionType === "AUTO_ASSIGN") {
+          await prisma.task.update({
+            where: { id: taskId },
+            data: { assigneeId: automation.actionValue }
+          });
+        }
+
+        // Action: Set Priority
+        if (automation.actionType === "SET_PRIORITY") {
+          await prisma.task.update({
+            where: { id: taskId },
+            data: { priority: automation.actionValue }
+          });
+        }
+      }
+    }
+  }
+);
+
 // Create an empty array where we'll export future Inngest functions
 export const functions = [
   syncUserCreation,
@@ -236,5 +276,6 @@ export const functions = [
   syncWorkspaceUpdation,
   syncWorkspaceDeletion,
   syncWorkspaceMemberCreation,
-  SendTaskAssignmentEmail
+  SendTaskAssignmentEmail,
+  ProcessAutomations
 ];
