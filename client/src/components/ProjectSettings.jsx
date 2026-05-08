@@ -292,7 +292,6 @@ export default function ProjectSettings({ project }) {
                         <button type="button" onClick={() => setIsDialogOpen(true)} className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800" >
                             <Plus className="size-4 text-zinc-900 dark:text-zinc-300" />
                         </button>
-                        <AddProjectMember isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
                     </div>
 
                     {/* Member List */}
@@ -308,6 +307,7 @@ export default function ProjectSettings({ project }) {
                     )}
                 </div>
             </div>
+            <AddProjectMember isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
         </div>
     );
 }

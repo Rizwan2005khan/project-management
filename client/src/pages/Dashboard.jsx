@@ -34,8 +34,9 @@ const Dashboard = () => {
                     </button>
                 </div>
 
-                <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
+            <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+
 
             {/* Main Stats */}
             <StatsGrid />

@@ -57,8 +57,9 @@ export default function Projects() {
                 <button onClick={() => setIsDialogOpen(true)} className="flex items-center px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition" >
                     <Plus className="size-4 mr-2" /> New Project
                 </button>
-                <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
+            <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+
 
             {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4">
