@@ -52,7 +52,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
     };
 
     return showCreateTask ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/60 backdrop-blur">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/40 dark:bg-black/80 backdrop-blur-sm overflow-y-auto py-8 px-4">
             <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-lg w-full max-w-md p-6 text-zinc-900 dark:text-white">
                 <h2 className="text-xl font-bold mb-4">Create New Task</h2>
 

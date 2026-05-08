@@ -42,7 +42,7 @@ const AddProjectMember = ({ isDialogOpen, setIsDialogOpen }) => {
     if (!isDialogOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/80 backdrop-blur-sm flex items-start justify-center z-[100] overflow-y-auto py-8 px-4">
             <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md text-zinc-900 dark:text-zinc-200">
                 {/* Header */}
                 <div className="mb-4">

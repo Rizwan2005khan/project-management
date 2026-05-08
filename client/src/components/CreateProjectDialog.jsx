@@ -53,7 +53,7 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
     if (!isDialogOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur flex items-center justify-center text-left z-50">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/80 backdrop-blur-sm flex items-start justify-center text-left z-[100] overflow-y-auto py-8 px-4">
             <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-lg text-zinc-900 dark:text-zinc-200 relative">
                 <button className="absolute top-3 right-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200" onClick={() => setIsDialogOpen(false)} >
                     <XIcon className="size-5" />
@@ -117,7 +117,7 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                     {/* Lead */}
                     <div>
                         <label className="block text-sm mb-1">Project Lead</label>
-                        <select value={formData.team_lead} onChange={(e) => setFormData({ ...formData, team_lead: e.target.value, team_members: e.target.value ? [...new Set([...formData.team_members, e.target.value])] : formData.team_members, })} className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm" >
+                        <select value={formData.team_lead} onChange={(e) => setFormData({ ...formData, team_lead: e.target.value, team_members: e.target.value && !formData.team_members.includes(e.target.value) ? [...formData.team_members, e.target.value] : formData.team_members, })} className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm" >
                             <option value="">No lead</option>
                             {currentWorkspace?.members?.map((member) => (
                                 <option key={member.user.email} value={member.user.email}>
@@ -139,9 +139,9 @@ const CreateProjectDialog = ({ isDialogOpen, setIsDialogOpen }) => {
                         >
                             <option value="">Add team members</option>
                             {currentWorkspace?.members
-                                ?.filter((email) => !formData.team_members.includes(email))
+                                ?.filter((member) => !formData.team_members.includes(member.user.email))
                                 .map((member) => (
-                                    <option key={member.user.email} value={member.email}>
+                                    <option key={member.user.email} value={member.user.email}>
                                         {member.user.email}
                                     </option>
                                 ))}
